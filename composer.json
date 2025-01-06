@@ -1,5 +1,6 @@
 {
     "name": "xida/php-localization",
+	"version": 1.0,
     "description": "Php Localization Package",
     "keywords": [
         "php",
