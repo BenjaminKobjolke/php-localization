@@ -51,9 +51,9 @@ final class Localization
             return $this->getAllDataFromFile();
 
         if (is_string($translateKey))
-            $text = $this->localizator->get($translateKey, $this->data(), $replacement);
+            return $this->localizator->get($translateKey, $this->data(), $replacement);
 
-        return safeText($text);
+        return '';
     }
 
     private function getAllDataFromFile(): array
