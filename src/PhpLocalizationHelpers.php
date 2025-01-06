@@ -30,10 +30,7 @@ if (!function_exists('safeText')) {
     function safeText(string $string): string
     {
         $string = stripslashes(trim($string));
-        $string = strip_tags($string);
         $string = preg_replace('/\s+/im', ' ', trim($string));
-        $string = html_entity_decode(htmlentities($string));
-        $string = htmlspecialchars($string ?? '', ENT_QUOTES, 'UTF-8');
         return trim($string);
     }
 }
