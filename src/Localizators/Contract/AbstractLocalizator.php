@@ -95,15 +95,29 @@ abstract class AbstractLocalizator implements Localizator
         string $key,
         array $replacement = [],
         string $fallBack = null
-    ): string {
+    ): string
+    {
 
         $fallBackData = isset($fallBack) ? $this->all($fallBack) : null;
         $data = $this->all($file);
 
-        foreach (explode('.', $key) as $segment) {
-            if (!isset($data[$segment]))
-                $data = $fallBackData;
-            $data = $data[$segment] ?? '';
+        $lastDotPosition = strrpos($key, '.');
+
+        // Extract the substring after the last dot
+        if ($lastDotPosition !== false) {
+            $value = substr($key, $lastDotPosition + 1);
+            if (isset($data[$value])) {
+                $data = $data[$value];
+            } else {
+                $data = $fallBackData[$value] ?? '';
+            }
+        } else {
+            foreach (explode('.', $key) as $segment) {
+                if (!isset($data[$segment])) {
+                    $data = $fallBackData;
+                }
+                $data = $data[$segment] ?? '';
+            }
         }
 
         return (!is_null($replacement) && !empty($replacement))
