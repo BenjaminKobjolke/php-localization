@@ -21,14 +21,17 @@ final class ConfigHandler
 {
     private string $driver;
     private string $langDir;
+    private ?string $defaultLangDir = null;
     private ?string $fallBackLang;
     private string $defaultLang = 'en';
 
     private array $allowedDrivers = ['array', 'json', 'gettext'];
 
     private array $allowedConfigs = [
-        'driver', 'langDir', 'defaultLang', 'fallBackLang'
+        'driver', 'langDir', 'defaultLangDir', 'defaultLang', 'fallBackLang'
     ];
+
+    private array $optionalConfigs = ['defaultLangDir'];
 
     public function __construct(array $configs)
     {
@@ -36,6 +39,7 @@ final class ConfigHandler
 
         $this->driver = $configs['driver'];
         $this->langDir = $configs['langDir'];
+        $this->defaultLangDir = $configs['defaultLangDir'] ?? null;
         $this->defaultLang = $configs['defaultLang'];
         $this->fallBackLang = $configs['fallBackLang'];
     }
@@ -50,13 +54,14 @@ final class ConfigHandler
      */
     public function checkConfigs(array $configs): void
     {
-        $diffConfigs = array_diff($this->allowedConfigs, array_values(array_keys($configs)));
+        $requiredConfigs = array_diff($this->allowedConfigs, $this->optionalConfigs);
+        $diffConfigs = array_diff($requiredConfigs, array_values(array_keys($configs)));
 
         if (!empty($diffConfigs))
             throw new MissingConfigOptionsException();
 
         foreach ($configs as $key => $value) {
-            if ($key === 'fallBackLang' && is_null($value) || empty($value))
+            if (($key === 'fallBackLang' || $key === 'defaultLangDir') && (is_null($value) || empty($value)))
                 continue;
 
             if (!is_string($value) || empty($value))
@@ -72,6 +77,7 @@ final class ConfigHandler
         return match ($property) {
             'driver' => $this->checkDriver($this->$property),
             'langDir' =>  $this->checkDirectory($this->$property),
+            'defaultLangDir' => $this->checkDefaultLangDir($this->$property),
             'defaultLang' =>  $this->checkDefaultLang($this->$property),
             'fallBackLang' =>  $this->checkFallBackLang($this->$property),
         };
@@ -128,6 +134,14 @@ final class ConfigHandler
             return null;
 
         return $this->checkDirectory($this->langDir . $fallBckLang);
+    }
+
+    private function checkDefaultLangDir(?string $defaultLangDir): ?string
+    {
+        if (is_null($defaultLangDir) || empty($defaultLangDir))
+            return null;
+
+        return $this->checkDirectory($defaultLangDir);
     }
 
     private function checkDirectory(string $path): string

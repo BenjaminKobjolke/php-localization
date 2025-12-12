@@ -67,6 +67,17 @@ final class Localization
                 throw new FileException($fallBackDir);
             $allData = $this->localizator->all($fallBackDir);
         }
+
+        // Merge with default translations if defaultLangDir is configured
+        $defaultLangDir = $this->config->defaultLangDir;
+        if (!is_null($defaultLangDir)) {
+            $defaultFile = $defaultLangDir . '/' . basename($this->file);
+            if (checkFile($defaultFile)) {
+                $defaultData = $this->localizator->all($defaultFile);
+                $allData = array_merge($defaultData, $allData);
+            }
+        }
+
         return $allData;
     }
 
