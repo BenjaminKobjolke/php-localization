@@ -23,6 +23,7 @@ final class Localization
     private string $file;
     private Config $config;
     private Localizator $localizator;
+    private ?array $cachedTranslations = null;
     private const LOCALIZATOR_NAMESPACE = 'PhpLocalization\\Localizators\\';
 
     public function __construct(array $configs = [])
@@ -50,35 +51,58 @@ final class Localization
         if (is_array($translateKey))
             return $this->getAllDataFromFile();
 
-        if (is_string($translateKey))
-            return $this->localizator->get($translateKey, $this->data(), $replacement);
+        if (is_string($translateKey)) {
+            $translations = $this->getMergedTranslations();
+            $result = $translations[$translateKey] ?? '';
+
+            if (!empty($replacement) && !empty($result)) {
+                foreach ($replacement as $key => $value) {
+                    $result = str_ireplace($key, $value, $result);
+                }
+            }
+
+            return $result;
+        }
 
         return '';
     }
 
     private function getAllDataFromFile(): array
     {
-        $data = $this->data();
-        $allData = $this->localizator->all($this->file);
+        return $this->getMergedTranslations();
+    }
 
-        if (empty($allData) && !is_null($data['fallBackLang'])) {
-            $fallBackDir = str_replace($data['defaultLang'], $data['fallBackLang'], $data['file']);
-            if (!checkFile($fallBackDir))
-                throw new FileException($fallBackDir);
-            $allData = $this->localizator->all($fallBackDir);
+    private function getMergedTranslations(): array
+    {
+        if ($this->cachedTranslations !== null) {
+            return $this->cachedTranslations;
         }
 
-        // Merge with default translations if defaultLangDir is configured
+        // Load default translations first
+        $this->cachedTranslations = [];
         $defaultLangDir = $this->config->defaultLangDir;
         if (!is_null($defaultLangDir)) {
             $defaultFile = $defaultLangDir . '/' . basename($this->file);
             if (checkFile($defaultFile)) {
-                $defaultData = $this->localizator->all($defaultFile);
-                $allData = array_merge($defaultData, $allData);
+                $this->cachedTranslations = $this->localizator->all($defaultFile);
             }
         }
 
-        return $allData;
+        // Load app-specific translations
+        $data = $this->data();
+        $appData = $this->localizator->all($this->file);
+
+        if (empty($appData) && !is_null($data['fallBackLang'])) {
+            $fallBackDir = str_replace($data['defaultLang'], $data['fallBackLang'], $data['file']);
+            if (checkFile($fallBackDir)) {
+                $appData = $this->localizator->all($fallBackDir);
+            }
+        }
+
+        // Merge: app-specific overrides defaults
+        $this->cachedTranslations = array_merge($this->cachedTranslations, $appData);
+
+        return $this->cachedTranslations;
     }
 
     /**
