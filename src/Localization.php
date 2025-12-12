@@ -88,7 +88,9 @@ final class Localization
                 $this->cachedTranslations = $this->localizator->all($defaultFile);
             } elseif (!is_null($this->config->fallBackLang)) {
                 // Fallback to default language (e.g., en.json) if requested language doesn't exist
-                $fallbackFile = $defaultLangDir . DIRECTORY_SEPARATOR . $this->config->fallBackLang . '.json';
+                // fallBackLang returns full path, extract just the lang code with basename
+                $fallbackLang = basename($this->config->fallBackLang);
+                $fallbackFile = $defaultLangDir . DIRECTORY_SEPARATOR . $fallbackLang . '.json';
                 if (checkFile($fallbackFile)) {
                     $this->cachedTranslations = $this->localizator->all($fallbackFile);
                 }
