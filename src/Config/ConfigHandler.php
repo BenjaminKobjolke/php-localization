@@ -118,7 +118,18 @@ final class ConfigHandler
      */
     private function checkDefaultLang(string $defaultLang): string
     {
-        return $this->checkDirectory($this->langDir . $defaultLang);
+        $path = $this->langDir . $defaultLang;
+
+        // For JSON driver, check for .json file; for others, check directory
+        if ($this->driver === 'json') {
+            $jsonPath = $path . '.json';
+            if (is_file($jsonPath)) {
+                return $defaultLang;
+            }
+        }
+
+        // Fallback to directory check (for array/gettext drivers)
+        return $this->checkDirectory($path);
     }
 
     /**
@@ -133,7 +144,18 @@ final class ConfigHandler
         if (is_null($fallBckLang) || empty($fallBckLang))
             return null;
 
-        return $this->checkDirectory($this->langDir . $fallBckLang);
+        $path = $this->langDir . $fallBckLang;
+
+        // For JSON driver, check for .json file; for others, check directory
+        if ($this->driver === 'json') {
+            $jsonPath = $path . '.json';
+            if (is_file($jsonPath)) {
+                return $fallBckLang;
+            }
+        }
+
+        // Fallback to directory check (for array/gettext drivers)
+        return $this->checkDirectory($path);
     }
 
     private function checkDefaultLangDir(?string $defaultLangDir): ?string
