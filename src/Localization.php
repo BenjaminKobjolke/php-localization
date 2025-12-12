@@ -53,11 +53,12 @@ final class Localization
 
         if (is_string($translateKey)) {
             $translations = $this->getMergedTranslations();
-            $result = $translations[$translateKey] ?? '';
+            // Use original key for lookup, not the mangled translateKey
+            $result = $translations[$key] ?? '';
 
             if (!empty($replacement) && !empty($result)) {
-                foreach ($replacement as $key => $value) {
-                    $result = str_ireplace($key, $value, $result);
+                foreach ($replacement as $k => $v) {
+                    $result = str_ireplace($k, $v, $result);
                 }
             }
 
@@ -82,7 +83,7 @@ final class Localization
         $this->cachedTranslations = [];
         $defaultLangDir = $this->config->defaultLangDir;
         if (!is_null($defaultLangDir)) {
-            $defaultFile = $defaultLangDir . '/' . basename($this->file);
+            $defaultFile = $defaultLangDir . DIRECTORY_SEPARATOR . basename($this->file);
             if (checkFile($defaultFile)) {
                 $this->cachedTranslations = $this->localizator->all($defaultFile);
             }
