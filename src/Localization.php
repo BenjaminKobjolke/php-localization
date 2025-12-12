@@ -205,9 +205,20 @@ final class Localization
 
     private function baseLanguagePath(): string
     {
-        return checkFile($this->config->defaultLang)
-            ? $this->config->defaultLang
-            : throw new FileException($this->config->defaultLang);
+        $path = $this->config->defaultLang;
+
+        // For JSON driver, the path is without extension, check if .json file exists
+        if ($this->config->isJsonDriver()) {
+            $jsonPath = $path . '.json';
+            if (checkFile($jsonPath)) {
+                return $path;
+            }
+        }
+
+        // For array driver, check if path exists as-is (directory)
+        return checkFile($path)
+            ? $path
+            : throw new FileException($path);
     }
 
     public function __toString(): string

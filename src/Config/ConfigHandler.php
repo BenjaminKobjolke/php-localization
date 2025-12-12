@@ -124,7 +124,8 @@ final class ConfigHandler
         if ($this->driver === 'json') {
             $jsonPath = $path . '.json';
             if (is_file($jsonPath)) {
-                return $defaultLang;
+                // Return path without .json extension - Localization.php adds it
+                return $path;
             }
         }
 
