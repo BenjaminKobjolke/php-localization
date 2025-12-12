@@ -25,6 +25,22 @@ Localization With 2 Drivers
 - Array
 - Json
 
+### Default Language Directory
+
+You can configure a `defaultLangDir` to provide base/default translations that get automatically merged with language-specific translations. Language-specific translations override the defaults.
+
+```php
+$config = [
+    'driver' => 'array',
+    'langDir' => '/path/to/lang/',
+    'defaultLangDir' => '/path/to/default/lang/', // Optional: base translations
+    'defaultLang' => 'en',
+    'fallBackLang' => null
+];
+
+$localization = new \PhpLocalization\Localization($config);
+```
+
 ## Documentation
 
 See the [documentation](https://github.com/dvlpr1996/php-localization/wiki) for detailed installation and usage instructions.
