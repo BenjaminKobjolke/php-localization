@@ -54,8 +54,22 @@ final class Localization
         if (is_string($translateKey)) {
             $translations = $this->getMergedTranslations();
 
-            // Support dot notation for nested keys (e.g., "site.title")
-            $result = $this->getNestedValue($translations, $translateKey);
+            // First try direct key lookup (backwards compatible with flat keys)
+            $result = $translations[$translateKey] ?? null;
+
+            // If not found, try nested lookup (remove filename prefix)
+            if ($result === null) {
+                $parts = explode('.', $translateKey);
+                if (count($parts) > 1) {
+                    array_shift($parts); // Remove filename part
+                    $lookupKey = implode('.', $parts);
+                    $result = $this->getNestedValue($translations, $lookupKey);
+                }
+            }
+
+            if ($result === null) {
+                $result = '';
+            }
 
             if (!empty($replacement) && is_string($result) && !empty($result)) {
                 foreach ($replacement as $k => $v) {
