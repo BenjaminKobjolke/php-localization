@@ -43,10 +43,14 @@ final class Localization
     public function lang(string $key, array $replacement = []): array|string
     {
         $this->file = $this->getTranslateFile($key);
-        $translateKey = $this->getTranslateKey($key);
 
-        if ($this->config->isJsonDriver())
-            $translateKey = $this->getTranslateKey($this->config->defaultLang . '.' . $key);
+        // For JSON driver with single file, use full key for nested lookup
+        // For array driver with multiple files, remove filename prefix
+        if ($this->config->isJsonDriver()) {
+            $translateKey = $key; // Use full key: "site.title"
+        } else {
+            $translateKey = $this->getTranslateKey($key); // Remove first part for array driver
+        }
 
         if (is_array($translateKey))
             return $this->getAllDataFromFile();
@@ -54,20 +58,15 @@ final class Localization
         if (is_string($translateKey)) {
             $translations = $this->getMergedTranslations();
 
-            // First try direct key lookup (backwards compatible with flat keys)
+            // First try direct key lookup (for flat keys like "site.title": "value")
             $result = $translations[$translateKey] ?? null;
 
-            // If not found, try nested lookup (remove filename prefix)
+            // If not found, try nested lookup (for nested JSON)
             if ($result === null) {
-                $parts = explode('.', $translateKey);
-                if (count($parts) > 1) {
-                    array_shift($parts); // Remove filename part
-                    $lookupKey = implode('.', $parts);
-                    $result = $this->getNestedValue($translations, $lookupKey);
-                }
+                $result = $this->getNestedValue($translations, $translateKey);
             }
 
-            if ($result === null) {
+            if ($result === null || $result === '') {
                 $result = '';
             }
 

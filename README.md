@@ -54,23 +54,39 @@ composer install
 
 ## Quick Start
 
-### 1. Create language files
+### 1. Create the language file
 
-Create a `lang` directory with language subdirectories:
+Create a `lang` directory with a JSON file per language:
 
 ```
-lang/
-└── en/
-    └── site.json
+project/
+├── lang/
+│   ├── en.json    # English translations
+│   └── de.json    # German translations
+└── public/
+    └── index.php
 ```
 
-**lang/en/site.json:**
+**Important:** For JSON driver, use a single file per language named `{lang}.json` (e.g., `en.json`), NOT a folder structure like `lang/en/site.json`.
+
+**lang/en.json:**
 ```json
 {
-    "title": "My Website",
-    "meta": {
-        "description": "Welcome to my website",
-        "keywords": "web, site, example"
+    "site": {
+        "title": "My Website",
+        "description": "Welcome to my website"
+    },
+    "nav": {
+        "home": "Home",
+        "about": "About",
+        "contact": "Contact"
+    },
+    "messages": {
+        "welcome": "Hello, :name!",
+        "errors": {
+            "not_found": "Page not found",
+            "server": "Server error"
+        }
     }
 }
 ```
@@ -85,7 +101,7 @@ use PhpLocalization\Localization;
 
 $localization = new Localization([
     'driver' => 'json',
-    'langDir' => __DIR__ . '/lang/',
+    'langDir' => __DIR__ . '/../lang/',  // Note: trailing slash required!
     'defaultLang' => 'en',
     'fallBackLang' => 'en'
 ]);
@@ -94,83 +110,79 @@ $localization = new Localization([
 ### 3. Get translations
 
 ```php
-// Get a simple value
+// Simple nested value
 echo $localization->lang('site.title');
 // Output: "My Website"
 
-// Get nested values using dot notation
-echo $localization->lang('site.meta.description');
-// Output: "Welcome to my website"
+// Deeply nested value
+echo $localization->lang('messages.errors.not_found');
+// Output: "Page not found"
 
-// Get entire file as array
-$siteData = $localization->lang('site');
-// Returns: ['title' => 'My Website', 'meta' => [...]]
+// With placeholder replacement
+echo $localization->lang('messages.welcome', [':name' => 'John']);
+// Output: "Hello, John!"
 ```
 
 ## Dot Notation
 
-Access nested values in your JSON files using dot notation:
+Access nested values in your JSON using dot notation:
 
-**Format:** `filename.key.subkey.subsubkey`
-
-**Example JSON (lang/en/messages.json):**
-```json
-{
-    "welcome": "Welcome!",
-    "errors": {
-        "not_found": "Page not found",
-        "server": {
-            "500": "Internal server error",
-            "503": "Service unavailable"
-        }
-    }
-}
-```
-
-**Usage:**
-```php
-$localization->lang('messages.welcome');           // "Welcome!"
-$localization->lang('messages.errors.not_found');  // "Page not found"
-$localization->lang('messages.errors.server.500'); // "Internal server error"
-```
+| Key | Returns |
+|-----|---------|
+| `site.title` | `"My Website"` |
+| `nav.home` | `"Home"` |
+| `messages.errors.not_found` | `"Page not found"` |
+| `messages.errors.server` | `"Server error"` |
 
 ## Configuration Options
 
-| Option | Type | Description |
-|--------|------|-------------|
-| `driver` | string | `'json'` or `'array'` |
-| `langDir` | string | Path to language directory (with trailing slash) |
-| `defaultLang` | string | Default language code (e.g., `'en'`) |
-| `fallBackLang` | string\|null | Fallback language if key not found |
-| `defaultLangDir` | string\|null | Optional base translations directory |
+| Option | Type | Required | Description |
+|--------|------|----------|-------------|
+| `driver` | string | Yes | `'json'` or `'array'` |
+| `langDir` | string | Yes | Path to language directory **with trailing slash** |
+| `defaultLang` | string | Yes | Default language code (e.g., `'en'`) |
+| `fallBackLang` | string\|null | No | Fallback language if translation not found |
+| `defaultLangDir` | string\|null | No | Optional base translations directory for merging |
+
+### Example Configuration
+
+```php
+$localization = new Localization([
+    'driver' => 'json',
+    'langDir' => __DIR__ . '/../lang/',
+    'defaultLang' => 'en',
+    'fallBackLang' => 'en'
+]);
+```
 
 ## Directory Structure
 
-### JSON Driver
+### JSON Driver (Recommended)
+
+Single file per language:
 
 ```
 lang/
-├── en/
-│   ├── site.json
-│   ├── messages.json
-│   └── errors.json
-└── de/
-    ├── site.json
-    ├── messages.json
-    └── errors.json
+├── en.json     # {"site": {"title": "..."}, "nav": {...}}
+├── de.json     # {"site": {"title": "..."}, "nav": {...}}
+└── fr.json     # {"site": {"title": "..."}, "nav": {...}}
 ```
 
 ### Array Driver
 
+Multiple PHP files per language:
+
 ```
 lang/
 ├── en/
-│   ├── site.php      # return ['title' => 'My Site'];
-│   └── messages.php
+│   ├── site.php      # <?php return ['title' => 'My Site'];
+│   └── nav.php       # <?php return ['home' => 'Home'];
 └── de/
     ├── site.php
-    └── messages.php
+    └── nav.php
 ```
+
+For array driver, use: `lang('site.title')` where `site` is the filename.
 
 ## String Replacement
 
@@ -179,31 +191,75 @@ Replace placeholders in translations:
 **JSON:**
 ```json
 {
-    "greeting": "Hello, :name!"
+    "greeting": "Hello, :name!",
+    "items": "You have :count items"
 }
 ```
 
 **PHP:**
 ```php
-echo $localization->lang('messages.greeting', [':name' => 'John']);
+echo $localization->lang('greeting', [':name' => 'John']);
 // Output: "Hello, John!"
+
+echo $localization->lang('items', [':count' => '5']);
+// Output: "You have 5 items"
 ```
 
 ## Using with Twig
 
 ```php
-use Twig\TwigFunction;
+<?php
+require_once 'vendor/autoload.php';
 
+use Twig\Loader\FilesystemLoader;
+use Twig\Environment;
+use Twig\TwigFunction;
+use PhpLocalization\Localization;
+
+// Setup localization
+$localization = new Localization([
+    'driver' => 'json',
+    'langDir' => __DIR__ . '/../lang/',
+    'defaultLang' => 'en',
+    'fallBackLang' => 'en'
+]);
+
+// Setup Twig
+$loader = new FilesystemLoader(__DIR__ . '/../templates');
+$twig = new Environment($loader);
+
+// Add translation function
 $twig->addFunction(new TwigFunction('t', function (string $key) use ($localization) {
     return $localization->lang($key);
 }));
+
+echo $twig->render('index.twig');
 ```
 
-**In templates:**
+**In Twig templates:**
 ```twig
 <title>{{ t('site.title') }}</title>
-<p>{{ t('site.meta.description') }}</p>
+<nav>
+    <a href="/">{{ t('nav.home') }}</a>
+    <a href="/about">{{ t('nav.about') }}</a>
+</nav>
+<p>{{ t('messages.welcome', {':name': 'John'}) }}</p>
 ```
+
+## Troubleshooting
+
+### Empty string returned
+
+1. **Check file path:** Ensure `langDir` has a trailing slash
+2. **Check file exists:** The file should be `lang/en.json`, not `lang/en/en.json`
+3. **Check JSON validity:** Use `json_decode()` to verify your JSON is valid
+4. **Check key exists:** Verify the dot notation path matches your JSON structure
+
+### File not found error
+
+1. Ensure the language file exists: `lang/{defaultLang}.json`
+2. Check that `langDir` points to the correct directory
+3. For JSON driver, do NOT create a subdirectory (use `lang/en.json`, not `lang/en/`)
 
 ## License
 
