@@ -94,7 +94,7 @@ abstract class AbstractLocalizator implements Localizator
         string $file,
         string $key,
         array $replacement = [],
-        string $fallBack = null
+        ?string $fallBack = null
     ): string
     {
 

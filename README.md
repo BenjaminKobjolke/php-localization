@@ -10,7 +10,7 @@ PHP Localization Library with support for JSON and Array drivers, dot notation f
 
 ## Installation
 
-### From GitHub (recommended for this fork)
+### From GitHub
 
 Add the repository to your `composer.json`:
 
@@ -23,7 +23,7 @@ Add the repository to your `composer.json`:
         }
     ],
     "require": {
-        "xida/php-localization": "dev-main"
+        "xida/php-localization": "*"
     }
 }
 ```
@@ -41,14 +41,16 @@ composer install
     "repositories": [
         {
             "type": "path",
-            "url": "/path/to/php-localization"
+            "url": "D:/GIT/BenjaminKobjolke/php-localization"
         }
     ],
     "require": {
-        "xida/php-localization": "dev-main"
+        "xida/php-localization": "*"
     }
 }
 ```
+
+**Note:** Use `*` for the version constraint with both VCS and path repositories.
 
 ## Quick Start
 
