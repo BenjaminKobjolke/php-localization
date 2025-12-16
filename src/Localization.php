@@ -53,10 +53,11 @@ final class Localization
 
         if (is_string($translateKey)) {
             $translations = $this->getMergedTranslations();
-            // Use original key for lookup, not the mangled translateKey
-            $result = $translations[$key] ?? '';
 
-            if (!empty($replacement) && !empty($result)) {
+            // Support dot notation for nested keys (e.g., "site.title")
+            $result = $this->getNestedValue($translations, $translateKey);
+
+            if (!empty($replacement) && is_string($result) && !empty($result)) {
                 foreach ($replacement as $k => $v) {
                     $result = str_ireplace($k, $v, $result);
                 }
@@ -66,6 +67,29 @@ final class Localization
         }
 
         return '';
+    }
+
+    /**
+     * Get nested value from array using dot notation
+     *
+     * @param array $array
+     * @param string $key
+     * @return mixed
+     */
+    private function getNestedValue(array $array, string $key): mixed
+    {
+        $keys = explode('.', $key);
+        $result = $array;
+
+        foreach ($keys as $k) {
+            if (is_array($result) && isset($result[$k])) {
+                $result = $result[$k];
+            } else {
+                return '';
+            }
+        }
+
+        return $result;
     }
 
     private function getAllDataFromFile(): array
