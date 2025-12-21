@@ -24,6 +24,7 @@ final class Localization
     private Config $config;
     private Localizator $localizator;
     private ?array $cachedTranslations = null;
+    private array $additionalPaths = [];
     private const LOCALIZATOR_NAMESPACE = 'PhpLocalization\\Localizators\\';
 
     public function __construct(array $configs = [])
@@ -83,6 +84,20 @@ final class Localization
     }
 
     /**
+     * Add an additional translation path. Translations from this path
+     * will override all previously loaded translations.
+     *
+     * @param string $path Path to directory containing {lang}.json files
+     * @return self For method chaining
+     */
+    public function addPath(string $path): self
+    {
+        $this->additionalPaths[] = rtrim($path, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+        $this->cachedTranslations = null; // Invalidate cache
+        return $this;
+    }
+
+    /**
      * Get nested value from array using dot notation
      *
      * @param array $array
@@ -105,6 +120,26 @@ final class Localization
         return $result;
     }
 
+    /**
+     * Deep merge two arrays recursively. Values from $override replace
+     * values from $base, with nested arrays merged recursively.
+     *
+     * @param array $base Base array
+     * @param array $override Override array (takes priority)
+     * @return array Merged array
+     */
+    private function deepMerge(array $base, array $override): array
+    {
+        foreach ($override as $key => $value) {
+            if (is_array($value) && isset($base[$key]) && is_array($base[$key])) {
+                $base[$key] = $this->deepMerge($base[$key], $value);
+            } else {
+                $base[$key] = $value;
+            }
+        }
+        return $base;
+    }
+
     private function getAllDataFromFile(): array
     {
         return $this->getMergedTranslations();
@@ -116,25 +151,26 @@ final class Localization
             return $this->cachedTranslations;
         }
 
-        // Load default translations first
-        $this->cachedTranslations = [];
+        $translations = [];
+        $langFile = basename($this->file); // e.g., "en.json"
+
+        // 1. Load default translations first
         $defaultLangDir = $this->config->defaultLangDir;
         if (!is_null($defaultLangDir)) {
-            $defaultFile = $defaultLangDir . DIRECTORY_SEPARATOR . basename($this->file);
+            $defaultFile = $defaultLangDir . DIRECTORY_SEPARATOR . $langFile;
             if (checkFile($defaultFile)) {
-                $this->cachedTranslations = $this->localizator->all($defaultFile);
+                $translations = $this->deepMerge($translations, $this->localizator->all($defaultFile));
             } elseif (!is_null($this->config->fallBackLang)) {
                 // Fallback to default language (e.g., en.json) if requested language doesn't exist
-                // fallBackLang returns full path, extract just the lang code with basename
                 $fallbackLang = basename($this->config->fallBackLang);
                 $fallbackFile = $defaultLangDir . DIRECTORY_SEPARATOR . $fallbackLang . '.json';
                 if (checkFile($fallbackFile)) {
-                    $this->cachedTranslations = $this->localizator->all($fallbackFile);
+                    $translations = $this->deepMerge($translations, $this->localizator->all($fallbackFile));
                 }
             }
         }
 
-        // Load app-specific translations
+        // 2. Load primary translations
         $data = $this->data();
         $appData = $this->localizator->all($this->file);
 
@@ -145,9 +181,17 @@ final class Localization
             }
         }
 
-        // Merge: app-specific overrides defaults
-        $this->cachedTranslations = array_merge($this->cachedTranslations, $appData);
+        $translations = $this->deepMerge($translations, $appData);
 
+        // 3. Load additional paths (each overrides previous)
+        foreach ($this->additionalPaths as $path) {
+            $additionalFile = $path . $langFile;
+            if (checkFile($additionalFile)) {
+                $translations = $this->deepMerge($translations, $this->localizator->all($additionalFile));
+            }
+        }
+
+        $this->cachedTranslations = $translations;
         return $this->cachedTranslations;
     }
 

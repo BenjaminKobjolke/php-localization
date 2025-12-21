@@ -155,6 +155,87 @@ $localization = new Localization([
 ]);
 ```
 
+## Additional Translation Paths
+
+You can dynamically add additional translation paths using the `addPath()` method. Each added path has higher priority than previous ones, allowing you to override translations for specific contexts (e.g., different pages, modules, or themes).
+
+### Basic Usage
+
+```php
+$localization = new Localization([
+    'driver' => 'json',
+    'langDir' => __DIR__ . '/../lang/',
+    'defaultLang' => 'en'
+]);
+
+// Add page-specific translations (overrides base translations)
+$localization->addPath(__DIR__ . '/../lang/imprint/');
+```
+
+### Method Chaining
+
+The `addPath()` method supports fluent interface:
+
+```php
+$localization = new Localization([...])
+    ->addPath('/shared/lang/')           // 3rd priority
+    ->addPath('/app/lang/imprint/')      // 4th priority (highest)
+;
+```
+
+### Merge Order
+
+Translations are merged in the following order (later paths override earlier ones):
+
+1. `defaultLangDir` (if configured) - lowest priority
+2. `langDir` - primary translations
+3. `addPath()` entries - in order added, highest priority last
+
+### Directory Structure Example
+
+```
+lang/
+├── en.json              # Base translations
+├── de.json
+└── imprint/
+    ├── en.json          # Page-specific overrides
+    └── de.json
+
+# Example lang/imprint/en.json:
+{
+    "page": {
+        "title": "Imprint - Custom Title"
+    }
+}
+```
+
+### Deep Merge
+
+All translations are deep-merged, meaning nested keys are merged recursively. This allows you to override specific nested values without replacing entire sections:
+
+**Base (`lang/en.json`):**
+```json
+{
+    "page": {
+        "title": "Default Title",
+        "description": "Default description"
+    }
+}
+```
+
+**Override (`lang/imprint/en.json`):**
+```json
+{
+    "page": {
+        "title": "Imprint"
+    }
+}
+```
+
+**Result:**
+- `page.title` = "Imprint" (from override)
+- `page.description` = "Default description" (from base)
+
 ## Directory Structure
 
 ### JSON Driver (Recommended)
