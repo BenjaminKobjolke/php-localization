@@ -152,7 +152,13 @@ final class Localization
         }
 
         if (empty($this->file)) {
-            return [];
+            $extension = $this->getExtension();
+            $filePath = $this->config->defaultLang . $extension;
+            if (checkFile($filePath)) {
+                $this->file = realpath($filePath);
+            } else {
+                return [];
+            }
         }
 
         $translations = [];
