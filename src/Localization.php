@@ -151,6 +151,10 @@ final class Localization
             return $this->cachedTranslations;
         }
 
+        if (empty($this->file)) {
+            return [];
+        }
+
         $translations = [];
         $langFile = basename($this->file); // e.g., "en.json"
 
