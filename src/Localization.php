@@ -20,7 +20,7 @@ use PhpLocalization\Localizators\Contract\LocalizatorInterface as Localizator;
 
 final class Localization
 {
-    private string $file;
+    private string $file = '';
     private Config $config;
     private Localizator $localizator;
     private ?array $cachedTranslations = null;
