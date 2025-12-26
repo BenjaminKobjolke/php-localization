@@ -198,6 +198,12 @@ final class Localization
             $additionalFile = $path . $langFile;
             if (checkFile($additionalFile)) {
                 $translations = $this->deepMerge($translations, $this->localizator->all($additionalFile));
+            } elseif (!is_null($this->config->fallBackLang)) {
+                // Fallback to default language for additional paths
+                $fallbackFile = $path . $this->config->fallBackLang . '.json';
+                if (checkFile($fallbackFile)) {
+                    $translations = $this->deepMerge($translations, $this->localizator->all($fallbackFile));
+                }
             }
         }
 
